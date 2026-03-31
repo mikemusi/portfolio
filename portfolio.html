@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mike Musi — Builder of Things That Matter</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --coral: #FF6B6B;
+    --yellow: #FFDD57;
+    --teal: #00D4AA;
+    --blue: #4ECDC4;
+    --purple: #7C5CFC;
+    --navy: #1A1A2E;
+    --off-white: #FAFAFA;
+    --card-1: #FF6B6B;
+    --card-2: #FFDD57;
+    --card-3: #4ECDC4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--navy);
+    color: var(--off-white);
+    overflow-x: hidden;
+  }
+
+  /* ========== NAV ========== */
+  nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 100;
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(12px);
+    background: rgba(26, 26, 46, 0.8);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .nav-logo {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: -0.5px;
+    color: var(--yellow);
+  }
+
+  .nav-links { display: flex; gap: 32px; }
+
+  .nav-links a {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: color 0.3s;
+    position: relative;
+  }
+
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--teal);
+    transition: width 0.3s;
+  }
+
+  .nav-links a:hover { color: #fff; }
+  .nav-links a:hover::after { width: 100%; }
+
+  /* ========== HERO ========== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 120px 40px 80px;
+    position: relative;
+  }
+
+  .hero-shapes {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .shape {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.15;
+    filter: blur(80px);
+    animation: float 8s ease-in-out infinite;
+  }
+
+  .shape-1 {
+    width: 500px; height: 500px;
+    background: var(--coral);
+    top: -100px; left: -100px;
+    animation-delay: 0s;
+  }
+
+  .shape-2 {
+    width: 400px; height: 400px;
+    background: var(--teal);
+    bottom: -50px; right: -50px;
+    animation-delay: -3s;
+  }
+
+  .shape-3 {
+    width: 300px; height: 300px;
+    background: var(--yellow);
+    top: 40%; left: 60%;
+    animation-delay: -5s;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -30px) scale(1.05); }
+    66% { transform: translate(-20px, 20px) scale(0.95); }
+  }
+
+  .hero-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    color: var(--teal);
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.3s;
+  }
+
+  .hero h1 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: clamp(3.5rem, 10vw, 8rem);
+    line-height: 0.95;
+    letter-spacing: -3px;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.5s;
+  }
+
+  .hero h1 .highlight {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--coral), var(--yellow));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: clamp(1.1rem, 2vw, 1.35rem);
+    color: rgba(255,255,255,0.6);
+    max-width: 550px;
+    line-height: 1.6;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.7s;
+  }
+
+  .hero-cta {
+    display: inline-block;
+    padding: 16px 40px;
+    background: var(--coral);
+    color: var(--navy);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-decoration: none;
+    border-radius: 60px;
+    transition: transform 0.3s, box-shadow 0.3s;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.9s;
+  }
+
+  .hero-cta:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(255, 107, 107, 0.4);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ========== ABOUT ========== */
+  .about {
+    padding: 120px 40px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .about-inner {
+    max-width: 800px;
+    position: relative;
+  }
+
+  .section-tag {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    color: var(--yellow);
+    margin-bottom: 20px;
+    display: inline-block;
+    padding: 6px 16px;
+    border: 2px solid var(--yellow);
+    border-radius: 30px;
+  }
+
+  .about h2 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.2;
+    margin-bottom: 24px;
+    letter-spacing: -1px;
+  }
+
+  .about p {
+    font-size: 1.15rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.8;
+    max-width: 640px;
+  }
+
+  .about .traits {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+
+  .trait {
+    padding: 10px 20px;
+    border-radius: 40px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    color: var(--navy);
+    transition: transform 0.3s;
+  }
+
+  .trait:hover { transform: scale(1.08) rotate(-2deg); }
+
+  .trait:nth-child(1) { background: var(--coral); }
+  .trait:nth-child(2) { background: var(--yellow); }
+  .trait:nth-child(3) { background: var(--teal); }
+
+  /* ========== PROJECTS ========== */
+  .projects {
+    padding: 100px 40px 140px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .projects-header {
+    text-align: center;
+    margin-bottom: 70px;
+  }
+
+  .projects-header h2 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2rem, 4vw, 3rem);
+    letter-spacing: -1px;
+    margin-top: 20px;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 28px;
+  }
+
+  .card {
+    border-radius: 24px;
+    padding: 40px 32px 36px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s;
+    min-height: 360px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.15) 100%);
+    z-index: 1;
+  }
+
+  .card:hover {
+    transform: translateY(-12px) rotate(-1deg);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+  }
+
+  .card-1 { background: var(--card-1); color: #fff; }
+  .card-2 { background: var(--card-2); color: var(--navy); }
+  .card-3 { background: var(--card-3); color: var(--navy); }
+
+  .card-emoji {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    z-index: 2;
+    transition: transform 0.4s;
+    display: inline-block;
+  }
+
+  .card:hover .card-emoji {
+    transform: scale(1.2) rotate(10deg);
+  }
+
+  .card-number {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 6rem;
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    opacity: 0.12;
+    z-index: 0;
+    line-height: 1;
+  }
+
+  .card h3 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.6rem;
+    letter-spacing: -0.5px;
+    margin-bottom: 12px;
+    z-index: 2;
+    position: relative;
+  }
+
+  .card p {
+    font-size: 1rem;
+    line-height: 1.6;
+    opacity: 0.85;
+    z-index: 2;
+    position: relative;
+    flex-grow: 1;
+  }
+
+  .card-tag {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    z-index: 2;
+    position: relative;
+    transition: transform 0.3s;
+  }
+
+  .card-1 .card-tag { background: rgba(255,255,255,0.25); color: #fff; }
+  .card-2 .card-tag { background: rgba(26,26,46,0.15); color: var(--navy); }
+  .card-3 .card-tag { background: rgba(26,26,46,0.15); color: var(--navy); }
+
+  .card:hover .card-tag { transform: translateX(6px); }
+
+  /* ========== CARD DECORATIVE SHAPES ========== */
+  .card-shape {
+    position: absolute;
+    border-radius: 50%;
+    z-index: 0;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .card:hover .card-shape { transform: scale(1.3) translate(10px, -10px); }
+
+  .card-1 .card-shape {
+    width: 120px; height: 120px;
+    background: rgba(255,255,255,0.15);
+    bottom: -30px; right: -30px;
+  }
+
+  .card-2 .card-shape {
+    width: 100px; height: 100px;
+    background: rgba(26,26,46,0.08);
+    bottom: -20px; right: -20px;
+  }
+
+  .card-3 .card-shape {
+    width: 140px; height: 140px;
+    background: rgba(26,26,46,0.08);
+    bottom: -40px; right: -40px;
+  }
+
+  /* ========== FOOTER ========== */
+  footer {
+    text-align: center;
+    padding: 40px;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.85rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  footer span { color: var(--coral); }
+
+  /* ========== SCROLL ANIMATIONS ========== */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .card.reveal:nth-child(1) { transition-delay: 0.1s; }
+  .card.reveal:nth-child(2) { transition-delay: 0.25s; }
+  .card.reveal:nth-child(3) { transition-delay: 0.4s; }
+
+  /* ========== RESPONSIVE ========== */
+  @media (max-width: 768px) {
+    nav { padding: 16px 20px; }
+    .nav-links { gap: 20px; }
+    .hero { padding: 100px 24px 60px; }
+    .about { padding: 80px 24px; }
+    .projects { padding: 60px 24px 100px; }
+    .cards { grid-template-columns: 1fr; }
+    .traits { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">MM</div>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#projects">Projects</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+  <div class="hero-label">Entrepreneur &bull; Builder &bull; Problem Solver</div>
+  <h1>Mike <span class="highlight">Musi</span></h1>
+  <p class="hero-sub">I build products people actually want to use. Less guesswork, more impact.</p>
+  <a href="#projects" class="hero-cta">See What I've Built &darr;</a>
+</section>
+
+<!-- ABOUT -->
+<section class="about" id="about">
+  <div class="about-inner">
+    <div class="section-tag reveal">About Me</div>
+    <h2 class="reveal">I don't just ship code.<br>I ship <em>solutions</em>.</h2>
+    <p class="reveal">
+      I'm an entrepreneur who thinks in products, obsesses over customers, and lets the data do the talking. Whether it's helping athletes shave seconds off their race, distilling billion-dollar wisdom into something actually useful, or making sure you never buy the wrong gear again — I build things that solve real problems for real people.
+    </p>
+    <div class="traits reveal">
+      <span class="trait">Product-Minded</span>
+      <span class="trait">Customer-Obsessed</span>
+      <span class="trait">Analytically Driven</span>
+    </div>
+  </div>
+</section>
+
+<!-- PROJECTS -->
+<section class="projects" id="projects">
+  <div class="projects-header">
+    <div class="section-tag reveal">Projects</div>
+    <h2 class="reveal">Things I've built<br>that I'm proud of.</h2>
+  </div>
+
+  <div class="cards">
+    <!-- Card 1 -->
+    <div class="card card-1 reveal">
+      <span class="card-number">01</span>
+      <div class="card-emoji">🏊‍♂️</div>
+      <h3>Triathlon Calculator</h3>
+      <p>Helping athletes plan their target race paces with precision. Swim, bike, run — dialed in before you even lace up.</p>
+      <span class="card-tag">View Project &rarr;</span>
+      <div class="card-shape"></div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="card card-2 reveal">
+      <span class="card-number">02</span>
+      <div class="card-emoji">📬</div>
+      <h3>Bezos "Letters" Bangers</h3>
+      <p>A curated collection of Jeff Bezos's sharpest strategic insights, sourced straight from his legendary shareholder letters.</p>
+      <span class="card-tag">View Project &rarr;</span>
+      <div class="card-shape"></div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="card card-3 reveal">
+      <span class="card-number">03</span>
+      <div class="card-emoji">🎯</div>
+      <h3>GearMatch</h3>
+      <p>Helping athletes find their best-fitting gear on the first try. No more returns, no more regret — just the right fit.</p>
+      <span class="card-tag">View Project &rarr;</span>
+      <div class="card-shape"></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>Built with care by <span>Mike Musi</span> &bull; 2026</p>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.15 });
+
+  reveals.forEach(el => observer.observe(el));
+
+  // Parallax on hero shapes
+  document.addEventListener('mousemove', (e) => {
+    const shapes = document.querySelectorAll('.shape');
+    const x = (e.clientX / window.innerWidth - 0.5) * 2;
+    const y = (e.clientY / window.innerHeight - 0.5) * 2;
+
+    shapes[0].style.transform = `translate(${x * 20}px, ${y * 20}px)`;
+    shapes[1].style.transform = `translate(${x * -15}px, ${y * -15}px)`;
+    shapes[2].style.transform = `translate(${x * 25}px, ${y * -10}px)`;
+  });
+
+  // Tilt effect on cards
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width - 0.5) * 12;
+      const y = ((e.clientY - rect.top) / rect.height - 0.5) * -12;
+      card.style.transform = `translateY(-12px) perspective(800px) rotateY(${x}deg) rotateX(${y}deg)`;
+    });
+
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
+  });
+</script>
+
+</body>
+</html>
