@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>GearMatch - Find Your Gear Match</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤓</text></svg>">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── DATA ─────
+const SPORTS = ["Cycling", "Triathlon", "Running", "Swimming", "Skiing", "Climbing"];
+const CONDITIONS = ["Poor", "Fair", "Good", "Great", "Like New"];
+
+const MOCK_USERS = [
+  { id: 1, name: "Jordan Ellis", sports: ["Cycling", "Triathlon"], match: 96, location: "Boston, MA", avatar: "JE", listings: 4, height: "5'11\"", weight: "172 lbs", bio: "Cat 3 racer, Ironman finisher. Closet is overflowing." },
+  { id: 2, name: "Sam Nakamura", sports: ["Running", "Triathlon"], match: 91, location: "Cambridge, MA", avatar: "SN", listings: 7, height: "5'9\"", weight: "155 lbs", bio: "Marathon PB 2:58. Shoe hoarder in recovery." },
+  { id: 3, name: "Alex Rivera", sports: ["Cycling", "Climbing"], match: 88, location: "Somerville, MA", avatar: "AR", listings: 3, height: "6'0\"", weight: "168 lbs", bio: "Gravel is life. Also trad climbing when it's warm." },
+  { id: 4, name: "Casey Park", sports: ["Swimming", "Triathlon"], match: 84, location: "Brookline, MA", avatar: "CP", listings: 5, height: "5'10\"", weight: "165 lbs", bio: "Former D1 swimmer turned triathlete." },
+  { id: 5, name: "Morgan Chen", sports: ["Running", "Skiing"], match: 79, location: "Newton, MA", avatar: "MC", listings: 2, height: "5'8\"", weight: "150 lbs", bio: "Ultra runner & backcountry skier." },
+  { id: 6, name: "Riley Thompson", sports: ["Cycling"], match: 93, location: "Arlington, MA", avatar: "RT", listings: 6, height: "5'11\"", weight: "170 lbs", bio: "Crit racer. Too many kits, not enough podiums." },
+];
+
+const MOCK_GEAR = {
+  1: [
+    { id: "g1", name: "Castelli Aero Race 6.0 Jersey", brand: "Castelli", size: "Medium (54)", sport: "Cycling", condition: 4, price: 85, trade: true, img: "\u{1F6B4}", tags: ["selling", "open to trade"] },
+    { id: "g2", name: "Roka Maverick Pro II Wetsuit", brand: "Roka", size: "MT", sport: "Triathlon", condition: 3, price: 190, trade: false, img: "\u{1F3CA}", tags: ["selling"] },
+    { id: "g3", name: "Giro Aether MIPS Helmet", brand: "Giro", size: "Medium", sport: "Cycling", condition: 5, price: 120, trade: true, img: "\u26D1\uFE0F", tags: ["selling", "open to trade"] },
+    { id: "g4", name: "Pearl Izumi PRO Bib Shorts", brand: "Pearl Izumi", size: "Medium", sport: "Cycling", condition: 4, price: 65, trade: true, img: "\u{1FA73}", tags: ["trading"] },
+  ],
+  2: [
+    { id: "g5", name: "Hoka Rocket X2", brand: "Hoka", size: "10.5", sport: "Running", condition: 3, price: 75, trade: false, img: "\u{1F45F}", tags: ["selling"] },
+    { id: "g6", name: "Nike Vaporfly Next% 2", brand: "Nike", size: "10.5", sport: "Running", condition: 4, price: 110, trade: false, img: "\u{1F45F}", tags: ["selling"] },
+    { id: "g7", name: "2XU P:1 Propel Wetsuit", brand: "2XU", size: "MT", sport: "Triathlon", condition: 4, price: 150, trade: true, img: "\u{1F3CA}", tags: ["selling", "open to trade"] },
+  ],
+  6: [
+    { id: "g8", name: "Rapha Pro Team Aero Jersey", brand: "Rapha", size: "Medium", sport: "Cycling", condition: 5, price: 95, trade: false, img: "\u{1F6B4}", tags: ["selling"] },
+    { id: "g9", name: "Specialized S-Works Prevail III", brand: "Specialized", size: "Medium", sport: "Cycling", condition: 4, price: 140, trade: true, img: "\u26D1\uFE0F", tags: ["open to trade"] },
+  ],
+};
+
+const MOCK_MESSAGES = {
+  1: [
+    { from: "them", text: "Hey! Saw you're interested \u2014 the Castelli jersey is basically new, wore it twice.", time: "2m ago" },
+    { from: "me", text: "Sick! Would you trade for a Maap Evade Pro jersey? Same size.", time: "1m ago" },
+    { from: "them", text: "Ooh maybe. Got pics?", time: "just now" },
+  ],
+  2: [
+    { from: "them", text: "The Vaporfly has about 30 miles on it. Basically fresh.", time: "1h ago" },
+    { from: "me", text: "Would you take $90?", time: "45m ago" },
+    { from: "them", text: "Meet me at $100 and it's yours \u{1F91D}", time: "30m ago" },
+  ],
+};
+
+// ─── STYLES ─────
+const S = `
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#06090F;--sf:#0D1219;--cd:#141C28;--cdh:#1B2536;
+  --ac:#00FFAA;--acd:rgba(0,255,170,.1);--acg:rgba(0,255,170,.25);
+  --dn:#FF3B5C;--dnd:rgba(255,59,92,.1);
+  --wn:#FFBE2E;
+  --tx:#E4EAF5;--tm:#6B7A94;--td:#3A4660;
+  --bd:rgba(255,255,255,.05);--bl:rgba(255,255,255,.08);
+  --r:16px;
+}
+html,body,#root{height:100%;background:var(--bg);color:var(--tx);font-family:'Outfit',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
+
+.shell{
+  max-width:430px;margin:0 auto;height:100dvh;height:100vh;
+  display:flex;flex-direction:column;position:relative;overflow:hidden;
+  background:var(--bg);
+  box-shadow:0 0 80px rgba(0,255,170,.03);
+}
+
+/* ── Header ── */
+.hdr{
+  padding:max(env(safe-area-inset-top,12px),12px) 20px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--bd);flex-shrink:0;z-index:10;
+  background:linear-gradient(180deg,var(--bg) 60%,transparent);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.logo{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;letter-spacing:-.5px}
+.logo b{color:var(--ac);font-weight:800}
+.badge{
+  font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--ac);background:var(--acd);padding:5px 12px;border-radius:100px;
+  border:1px solid rgba(0,255,170,.15);
+}
+
+/* ── Page ── */
+.page{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+.page::-webkit-scrollbar{display:none}
+
+/* ── Tab Bar ── */
+.tabs{
+  display:flex;border-top:1px solid var(--bd);background:var(--sf);flex-shrink:0;
+  padding:4px 0 max(env(safe-area-inset-bottom,8px),8px);
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:10px 0 4px;background:none;border:none;color:var(--td);
+  font-family:'Outfit',sans-serif;font-size:10px;font-weight:600;
+  cursor:pointer;transition:color .2s;position:relative;letter-spacing:.3px;
+}
+.tab.on{color:var(--ac)}
+.tab.on::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:20px;height:2px;background:var(--ac);border-radius:0 0 2px 2px}
+.tab svg{width:20px;height:20px}
+
+/* ── Swipe Card ── */
+.swipe-zone{padding:12px 16px 0;display:flex;flex-direction:column;align-items:center;flex:1}
+.card-wrap{width:100%;position:relative;touch-action:pan-y}
+.swipe-card{
+  width:100%;background:var(--cd);border-radius:20px;border:1px solid var(--bl);
+  overflow:hidden;transition:transform .45s cubic-bezier(.4,0,.2,1),opacity .35s;
+  will-change:transform;
+}
+.swipe-card.gone-r{transform:translateX(110%) rotate(12deg);opacity:0}
+.swipe-card.gone-l{transform:translateX(-110%) rotate(-12deg);opacity:0}
+.swipe-card.drag{transition:none}
+
+.card-top{
+  height:170px;display:flex;align-items:center;justify-content:center;position:relative;
+  background:linear-gradient(160deg,rgba(0,255,170,.06) 0%,rgba(0,255,170,.01) 100%);
+  overflow:hidden;
+}
+.card-top::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:60px;
+  background:linear-gradient(transparent,var(--cd));
+}
+.av{
+  width:84px;height:84px;border-radius:50%;
+  background:linear-gradient(135deg,var(--ac),#00C98B);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--bg);
+  z-index:1;box-shadow:0 8px 40px rgba(0,255,170,.35);
+}
+.ring{
+  position:absolute;width:108px;height:108px;border-radius:50%;
+  border:2px solid var(--ac);opacity:.2;animation:ring 2.5s ease-in-out infinite;
+}
+@keyframes ring{0%,100%{transform:scale(1);opacity:.2}50%{transform:scale(1.12);opacity:.08}}
+
+.card-body{padding:20px 20px 22px}
+.card-name{font-size:21px;font-weight:700;letter-spacing:-.3px}
+.card-loc{font-size:12px;color:var(--tm);margin-top:3px}
+.card-bio{font-size:13px;color:var(--tm);line-height:1.5;margin:14px 0;font-style:italic;opacity:.85}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip{
+  padding:7px 13px;border-radius:10px;font-size:12px;font-weight:600;
+  display:flex;align-items:center;gap:5px;
+}
+.chip.match{background:var(--acd);color:var(--ac);border:1px solid rgba(0,255,170,.18)}
+.chip.count{background:rgba(255,255,255,.03);color:var(--tm);border:1px solid var(--bd)}
+.card-dims{display:flex;gap:14px;font-size:12px;color:var(--tm);margin-bottom:14px}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{
+  font-size:11px;font-weight:600;padding:5px 12px;border-radius:100px;
+  background:rgba(255,255,255,.03);color:var(--tm);border:1px solid var(--bd);
+  letter-spacing:.3px;
+}
+
+/* swipe overlay hints */
+.swipe-hint{
+  position:absolute;top:20px;z-index:5;font-size:14px;font-weight:700;
+  padding:8px 20px;border-radius:12px;opacity:0;transition:opacity .15s;
+  pointer-events:none;letter-spacing:.5px;
+}
+.swipe-hint.like{right:20px;background:var(--acd);color:var(--ac);border:2px solid var(--ac)}
+.swipe-hint.nope{left:20px;background:var(--dnd);color:var(--dn);border:2px solid var(--dn)}
+.swipe-hint.show{opacity:1}
+
+.btns{display:flex;gap:16px;margin-top:16px;padding-bottom:8px}
+.btn-sw{
+  width:60px;height:60px;border-radius:50%;border:2px solid var(--bl);background:var(--cd);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;
+  transition:all .2s;-webkit-user-select:none;user-select:none;
+}
+.btn-sw:active{transform:scale(.92)}
+.btn-sw.no:active{border-color:var(--dn);background:var(--dnd)}
+.btn-sw.yes:active{border-color:var(--ac);background:var(--acd);box-shadow:0 0 24px var(--acg)}
+
+/* ── Empty ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;text-align:center;gap:10px;opacity:.7}
+.empty .ic{font-size:44px;margin-bottom:4px}
+.empty h3{font-size:17px;font-weight:600}
+.empty p{font-size:13px;color:var(--tm);line-height:1.5}
+
+/* ── Matches List ── */
+.m-list{padding:8px 12px}
+.sec-lbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--td);padding:14px 8px 6px}
+.m-row{
+  display:flex;align-items:center;gap:14px;padding:14px 12px;border-radius:14px;
+  cursor:pointer;transition:background .12s;-webkit-user-select:none;user-select:none;
+}
+.m-row:active{background:var(--cd)}
+.m-av{
+  width:46px;height:46px;border-radius:50%;
+  background:linear-gradient(135deg,var(--ac),#00C98B);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--bg);flex-shrink:0;
+}
+.m-info{flex:1;min-width:0}
+.m-name{font-size:15px;font-weight:600}
+.m-prev{font-size:12px;color:var(--tm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.m-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.m-pct{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--ac)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ac)}
+
+/* ── Closet / Gear ── */
+.cl-hdr{padding:18px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.cl-title{font-size:17px;font-weight:700}
+.add-btn{
+  background:var(--ac);color:var(--bg);border:none;padding:9px 18px;border-radius:100px;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;
+  transition:all .2s;letter-spacing:.2px;
+}
+.add-btn:active{transform:scale(.95)}
+.g-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px 20px}
+.g-card{
+  background:var(--cd);border-radius:16px;border:1px solid var(--bd);overflow:hidden;
+  cursor:pointer;transition:transform .15s;-webkit-user-select:none;user-select:none;
+}
+.g-card:active{transform:scale(.97)}
+.g-img{height:90px;display:flex;align-items:center;justify-content:center;font-size:36px;background:rgba(255,255,255,.015)}
+.g-info{padding:12px}
+.g-name{font-size:12px;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.g-brand{font-size:10px;color:var(--tm);margin:4px 0 8px}
+.g-foot{display:flex;align-items:center;justify-content:space-between}
+.g-price{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--ac)}
+.g-cond{font-size:10px;color:var(--td)}
+.g-tags{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.g-tag{
+  font-size:9px;font-weight:700;padding:3px 8px;border-radius:100px;
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.g-tag.sell{background:var(--acd);color:var(--ac)}
+.g-tag.trade{background:rgba(255,190,46,.1);color:var(--wn)}
+
+/* ── Chat ── */
+.chat{display:flex;flex-direction:column;height:100%}
+.chat-hdr{
+  padding:12px 16px;display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid var(--bd);flex-shrink:0;
+}
+.chat-back{background:none;border:none;color:var(--ac);cursor:pointer;font-size:20px;padding:6px;display:flex}
+.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:82%;padding:11px 15px;border-radius:18px;font-size:14px;line-height:1.45}
+.msg.them{align-self:flex-start;background:var(--cd);border-bottom-left-radius:6px}
+.msg.me{align-self:flex-end;background:var(--ac);color:var(--bg);border-bottom-right-radius:6px;font-weight:500}
+.msg-t{font-size:10px;color:var(--td);margin-top:3px}
+.msg.me .msg-t{color:rgba(6,9,15,.4)}
+.chat-gear{padding:10px 14px 0;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch}
+.chat-gear::-webkit-scrollbar{display:none}
+.cg-item{
+  flex-shrink:0;background:var(--cd);border:1px solid var(--bd);border-radius:12px;
+  padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;
+  font-size:12px;transition:background .12s;
+}
+.cg-item:active{background:var(--cdh)}
+.chat-bar{
+  padding:10px 14px max(env(safe-area-inset-bottom,10px),10px);
+  border-top:1px solid var(--bd);display:flex;gap:8px;flex-shrink:0;
+}
+.chat-in{
+  flex:1;background:var(--cd);border:1px solid var(--bl);border-radius:100px;
+  padding:10px 18px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--tx);
+  outline:none;transition:border-color .2s;
+}
+.chat-in:focus{border-color:var(--ac)}
+.chat-in::placeholder{color:var(--td)}
+.send{
+  width:40px;height:40px;border-radius:50%;background:var(--ac);border:none;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  color:var(--bg);font-size:16px;font-weight:700;transition:all .15s;flex-shrink:0;
+}
+.send:active{transform:scale(.9)}
+
+/* ── Profile ── */
+.prof{padding:20px 20px 40px}
+.prof-top{text-align:center;margin-bottom:28px}
+.prof-av{
+  width:76px;height:76px;border-radius:50%;
+  background:linear-gradient(135deg,var(--ac),#00C98B);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--bg);
+  margin:0 auto 12px;box-shadow:0 6px 30px rgba(0,255,170,.3);
+}
+.prof-name{font-size:19px;font-weight:700}
+.prof-loc{font-size:12px;color:var(--tm);margin-top:3px}
+.prof-sec{margin-bottom:24px}
+.prof-lbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--td);margin-bottom:10px}
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.m-item{
+  display:flex;justify-content:space-between;align-items:center;padding:10px 12px;
+  background:var(--cd);border-radius:10px;border:1px solid var(--bd);
+}
+.m-lbl{font-size:11px;color:var(--tm)}
+.m-val{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--ac)}
+.b-hist{display:flex;flex-direction:column;gap:6px}
+.b-row{
+  display:flex;justify-content:space-between;padding:10px 12px;
+  background:var(--cd);border-radius:10px;border:1px solid var(--bd);font-size:13px;
+}
+.b-nm{font-weight:600}
+.b-sz{color:var(--tm);font-family:'JetBrains Mono',monospace;font-size:12px}
+
+/* ── Modals ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;
+  z-index:100;padding:16px;animation:fadeIn .2s;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--sf);border:1px solid var(--bl);border-radius:24px;
+  width:100%;max-width:400px;max-height:82dvh;max-height:82vh;
+  overflow-y:auto;padding:26px 22px;
+}
+.modal::-webkit-scrollbar{display:none}
+.modal h2{font-size:19px;font-weight:700;letter-spacing:-.2px}
+.modal .sub{font-size:13px;color:var(--tm);margin-top:4px;margin-bottom:22px;line-height:1.45}
+.fg{margin-bottom:16px}
+.fl{font-size:11px;font-weight:600;color:var(--tm);margin-bottom:7px;display:block;letter-spacing:.5px}
+.fi{
+  width:100%;background:var(--cd);border:1px solid var(--bl);border-radius:10px;
+  padding:11px 14px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--tx);
+  outline:none;transition:border-color .2s;
+}
+.fi:focus{border-color:var(--ac)}
+.fi::placeholder{color:var(--td)}
+.sp-sel{display:flex;flex-wrap:wrap;gap:8px}
+.sp-opt{
+  padding:9px 16px;border-radius:100px;border:1px solid var(--bl);background:var(--cd);
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;color:var(--tm);
+  cursor:pointer;transition:all .15s;-webkit-user-select:none;user-select:none;
+}
+.sp-opt:active{transform:scale(.95)}
+.sp-opt.on{background:var(--acd);border-color:rgba(0,255,170,.3);color:var(--ac);font-weight:600}
+.mi{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.steps{display:flex;justify-content:center;gap:8px;margin-bottom:22px}
+.stp{width:8px;height:8px;border-radius:50%;background:var(--td);transition:all .3s}
+.stp.on{background:var(--ac);width:24px;border-radius:4px}
+.stp.done{background:var(--ac);opacity:.35}
+.br{display:flex;gap:10px;margin-top:22px}
+.btn-p{
+  flex:1;background:var(--ac);color:var(--bg);border:none;padding:13px;border-radius:12px;
+  font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;
+  transition:all .15s;letter-spacing:.2px;
+}
+.btn-p:active{transform:scale(.97)}
+.btn-p:disabled{opacity:.25;cursor:not-allowed}
+.btn-s{
+  background:var(--cd);color:var(--tx);border:1px solid var(--bl);padding:13px 20px;
+  border-radius:12px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;
+  cursor:pointer;transition:all .15s;
+}
+.btn-s:active{background:var(--cdh)}
+.cond-sel{display:flex;gap:5px}
+.cond-opt{
+  flex:1;text-align:center;padding:9px 2px;border-radius:8px;border:1px solid var(--bl);
+  background:var(--cd);font-size:10px;font-weight:600;color:var(--tm);cursor:pointer;transition:all .15s;
+}
+.cond-opt.on{background:var(--acd);border-color:rgba(0,255,170,.3);color:var(--ac)}
+
+/* ── Detail Sheet ── */
+.sheet-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);z-index:90;display:flex;align-items:flex-end;
+  justify-content:center;animation:fadeIn .2s;
+}
+.sheet{
+  background:var(--sf);border:1px solid var(--bl);border-radius:24px 24px 0 0;
+  width:100%;max-width:430px;max-height:78dvh;max-height:78vh;
+  overflow-y:auto;padding:26px 22px max(env(safe-area-inset-bottom,20px),20px);
+  animation:slideUp .3s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes slideUp{from{transform:translateY(40%);opacity:0}to{transform:translateY(0);opacity:1}}
+.sheet::-webkit-scrollbar{display:none}
+.sheet-x{
+  background:var(--cd);border:1px solid var(--bd);border-radius:50%;width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tm);
+  float:right;font-size:14px;font-weight:700;
+}
+.sheet-x:active{background:var(--cdh)}
+.d-emo{font-size:52px;margin-bottom:14px}
+.d-nm{font-size:19px;font-weight:700}
+.d-br{font-size:13px;color:var(--tm);margin-top:2px;margin-bottom:14px}
+.d-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.d-chip{
+  padding:7px 14px;border-radius:100px;font-size:12px;font-weight:600;
+  background:var(--cd);border:1px solid var(--bd);color:var(--tm);
+}
+.d-acts{display:flex;gap:10px;margin-top:18px}
+
+/* ── Feedback ── */
+.fb{
+  background:linear-gradient(135deg,rgba(0,255,170,.06),rgba(0,255,170,.02));
+  border:1px solid rgba(0,255,170,.1);border-radius:14px;margin:12px 16px;padding:14px 16px;
+  text-align:center;
+}
+.fb .lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--ac);text-transform:uppercase;margin-bottom:5px}
+.fb p{font-size:12px;color:var(--tm);line-height:1.5}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+  background:var(--cd);border:1px solid var(--bl);padding:12px 24px;border-radius:100px;
+  font-size:14px;font-weight:600;z-index:200;white-space:nowrap;
+  animation:tin .25s ease-out,tout .25s ease-in 1.7s forwards;
+}
+@keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(16px)}}
+@keyframes tout{to{opacity:0;transform:translateX(-50%) translateY(-8px)}}
+
+.anim-up{animation:animUp .3s ease-out}
+@keyframes animUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+`;
+
+// ─── ICONS ─────
+const IcDiscover = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.5 4.5-4.5 2.5 2.5-4.5z"/></svg>;
+const IcMatches = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>;
+const IcCloset = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M12 3v18M2 12h8M14 12h8"/></svg>;
+const IcProfile = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 00-16 0"/></svg>;
+
+// ─── APP ─────
+function App() {
+  const [tab, setTab] = useState("discover");
+  const [onboarded, setOnboarded] = useState(false);
+  const [matches, setMatches] = useState([]);
+  const [idx, setIdx] = useState(0);
+  const [anim, setAnim] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [chatUser, setChatUser] = useState(null);
+  const [viewGear, setViewGear] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [myGear, setMyGear] = useState([
+    { id: "my1", name: "Maap Evade Pro Jersey", brand: "Maap", size: "Medium", sport: "Cycling", condition: 4, price: 70, trade: true, img: "\u{1F6B4}", tags: ["selling", "open to trade"] },
+    { id: "my2", name: "Saucony Endorphin Pro 3", brand: "Saucony", size: "10.5", sport: "Running", condition: 3, price: 60, trade: false, img: "\u{1F45F}", tags: ["selling"] },
+  ]);
+
+  // Touch swipe
+  const touchRef = useRef({ startX: 0, currentX: 0, swiping: false });
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2200); };
+
+  const doSwipe = useCallback((dir) => {
+    const user = MOCK_USERS[idx];
+    if (!user) return;
+    setAnim(dir);
+    setTimeout(() => {
+      if (dir === "right") {
+        setMatches(p => [...p, user]);
+        flash(`\u{1F91D} Matched with ${user.name}!`);
+      }
+      setIdx(i => i + 1);
+      setAnim(null);
+      setDragX(0);
+    }, 400);
+  }, [idx]);
+
+  const onTouchStart = useCallback((e) => {
+    touchRef.current = { startX: e.touches[0].clientX, currentX: e.touches[0].clientX, swiping: true };
+    setIsDragging(true);
+  }, []);
+
+  const onTouchMove = useCallback((e) => {
+    if (!touchRef.current.swiping) return;
+    touchRef.current.currentX = e.touches[0].clientX;
+    setDragX(touchRef.current.currentX - touchRef.current.startX);
+  }, []);
+
+  const onTouchEnd = useCallback(() => {
+    if (!touchRef.current.swiping) return;
+    touchRef.current.swiping = false;
+    setIsDragging(false);
+    const dx = touchRef.current.currentX - touchRef.current.startX;
+    if (dx > 80) doSwipe("right");
+    else if (dx < -80) doSwipe("left");
+    else setDragX(0);
+  }, [doSwipe]);
+
+  const cur = MOCK_USERS[idx];
+  const hintLike = dragX > 30;
+  const hintNope = dragX < -30;
+
+  return (
+    <>
+      <style>{S}</style>
+      <div className="shell">
+        <div className="hdr">
+          <div className="logo">Gear<b>Match</b></div>
+          <div className="badge">MVP Demo</div>
+        </div>
+
+        <div className="page">
+          {!onboarded && <Onboarding onDone={() => { setOnboarded(true); flash("\u2705 Profile created! Start swiping."); }} />}
+
+          {tab === "discover" && onboarded && !chatUser && (
+            <div className="swipe-zone anim-up">
+              <FB />
+              {cur ? (
+                <>
+                  <div className="card-wrap" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+                    <div
+                      className={`swipe-card ${anim === "right" ? "gone-r" : anim === "left" ? "gone-l" : ""} ${isDragging ? "drag" : ""}`}
+                      style={isDragging && !anim ? { transform: `translateX(${dragX}px) rotate(${dragX * 0.06}deg)` } : undefined}
+                    >
+                      <div className={`swipe-hint like ${hintLike ? "show" : ""}`}>MATCH \u2665</div>
+                      <div className={`swipe-hint nope ${hintNope ? "show" : ""}`}>SKIP \u2715</div>
+                      <div className="card-top"><div className="ring" /><div className="av">{cur.avatar}</div></div>
+                      <div className="card-body">
+                        <div className="card-name">{cur.name}</div>
+                        <div className="card-loc">{"\u{1F4CD}"} {cur.location}</div>
+                        <div className="card-bio">"{cur.bio}"</div>
+                        <div className="chips">
+                          <div className="chip match">{"\u{1F3AF}"} {cur.match}% match</div>
+                          <div className="chip count">{"\u{1F4E6}"} {cur.listings} listings</div>
+                        </div>
+                        <div className="card-dims"><span>{"\u{1F4CF}"} {cur.height}</span><span>{"\u2696\uFE0F"} {cur.weight}</span></div>
+                        <div className="tags">{cur.sports.map(s => <span className="tag" key={s}>{s}</span>)}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="btns">
+                    <button className="btn-sw no" onClick={() => doSwipe("left")}>{"\u2715"}</button>
+                    <button className="btn-sw yes" onClick={() => doSwipe("right")}>{"\u2665"}</button>
+                  </div>
+                </>
+              ) : (
+                <div className="empty"><div className="ic">{"\u{1F504}"}</div><h3>You've seen everyone!</h3><p>New athletes join daily. Check back soon.</p></div>
+              )}
+            </div>
+          )}
+
+          {tab === "matches" && onboarded && !chatUser && (
+            <div className="m-list anim-up">
+              <FB />
+              {matches.length === 0 ? (
+                <div className="empty" style={{ paddingTop: 50 }}><div className="ic">{"\u{1F91D}"}</div><h3>No matches yet</h3><p>Swipe right on Discover to match with athletes.</p></div>
+              ) : (
+                <>
+                  <div className="sec-lbl">Your Matches</div>
+                  {matches.map(m => (
+                    <div className="m-row" key={m.id} onClick={() => setChatUser(m)}>
+                      <div className="m-av">{m.avatar}</div>
+                      <div className="m-info">
+                        <div className="m-name">{m.name}</div>
+                        <div className="m-prev">{MOCK_MESSAGES[m.id] ? MOCK_MESSAGES[m.id].at(-1).text : `${m.listings} items in closet`}</div>
+                      </div>
+                      <div className="m-meta">
+                        <div className="m-pct">{m.match}%</div>
+                        {MOCK_MESSAGES[m.id] && <div className="dot" />}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+
+          {chatUser && <Chat user={chatUser} onBack={() => setChatUser(null)} onGear={setViewGear} />}
+
+          {tab === "closet" && onboarded && (
+            <div className="anim-up">
+              <div className="cl-hdr">
+                <div className="cl-title">My Closet</div>
+                <button className="add-btn" onClick={() => setShowForm(true)}>+ Add Gear</button>
+              </div>
+              <FB />
+              <div className="g-grid">
+                {myGear.map(g => (
+                  <div className="g-card" key={g.id} onClick={() => setViewGear(g)}>
+                    <div className="g-img">{g.img}</div>
+                    <div className="g-info">
+                      <div className="g-name">{g.name}</div>
+                      <div className="g-brand">{g.brand} · {g.size}</div>
+                      <div className="g-foot"><div className="g-price">${g.price}</div><div className="g-cond">{CONDITIONS[g.condition - 1]}</div></div>
+                      <div className="g-tags">{g.tags.map(t => <span className={`g-tag ${t.includes("trade") ? "trade" : "sell"}`} key={t}>{t}</span>)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === "profile" && onboarded && (
+            <div className="prof anim-up">
+              <div className="prof-top">
+                <div className="prof-av">YO</div>
+                <div className="prof-name">You (Demo User)</div>
+                <div className="prof-loc">{"\u{1F4CD}"} Malden, MA</div>
+              </div>
+              <div className="prof-sec">
+                <div className="prof-lbl">Body Measurements</div>
+                <div className="m-grid">
+                  {[["Height","5'10\""],["Weight","168 lbs"],["Chest","39\""],["Waist","32\""],["Hips","38\""],["Inseam","32\""],["Arm Length","25\""],["Shoulder","18\""],["Foot","10.5\""]].map(([l,v]) => (
+                    <div className="m-item" key={l}><span className="m-lbl">{l}</span><span className="m-val">{v}</span></div>
+                  ))}
+                </div>
+              </div>
+              <div className="prof-sec">
+                <div className="prof-lbl">Brand / Size History</div>
+                <div className="b-hist">
+                  {[["Castelli","Medium (54)"],["Pearl Izumi","Medium"],["Hoka","10.5"],["Rapha","Medium"]].map(([b,s]) => (
+                    <div className="b-row" key={b}><span className="b-nm">{b}</span><span className="b-sz">{s}</span></div>
+                  ))}
+                </div>
+              </div>
+              <div className="prof-sec">
+                <div className="prof-lbl">Sports</div>
+                <div className="tags">{["Cycling","Triathlon","Running"].map(s => <span className="tag" key={s}>{s}</span>)}</div>
+              </div>
+              <FB />
+            </div>
+          )}
+        </div>
+
+        {onboarded && (
+          <div className="tabs">
+            {[
+              { id: "discover", l: "Discover", I: IcDiscover },
+              { id: "matches", l: "Matches", I: IcMatches },
+              { id: "closet", l: "Closet", I: IcCloset },
+              { id: "profile", l: "Profile", I: IcProfile },
+            ].map(({ id, l, I }) => (
+              <button key={id} className={`tab ${tab === id ? "on" : ""}`} onClick={() => { setTab(id); setChatUser(null); }}><I />{l}</button>
+            ))}
+          </div>
+        )}
+
+        {toast && <div className="toast">{toast}</div>}
+
+        {viewGear && (
+          <div className="sheet-overlay" onClick={() => setViewGear(null)}>
+            <div className="sheet" onClick={e => e.stopPropagation()}>
+              <button className="sheet-x" onClick={() => setViewGear(null)}>{"\u2715"}</button>
+              <div className="d-emo">{viewGear.img}</div>
+              <div className="d-nm">{viewGear.name}</div>
+              <div className="d-br">{viewGear.brand} · Size {viewGear.size}</div>
+              <div className="d-meta">
+                <div className="d-chip">{"\u{1F3F7}\uFE0F"} ${viewGear.price}</div>
+                <div className="d-chip">{"\u2B50"} {CONDITIONS[viewGear.condition - 1]}</div>
+                <div className="d-chip">{"\u{1F3C5}"} {viewGear.sport}</div>
+              </div>
+              <div className="g-tags" style={{ marginBottom: 14 }}>
+                {viewGear.tags.map(t => <span className={`g-tag ${t.includes("trade") ? "trade" : "sell"}`} key={t}>{t}</span>)}
+              </div>
+              <div className="d-acts">
+                <button className="btn-p" onClick={() => { setViewGear(null); flash("\u{1F4AC} Offer sent! (demo)"); }}>Make Offer</button>
+                {viewGear.trade && <button className="btn-s" onClick={() => { setViewGear(null); flash("\u{1F504} Trade proposed! (demo)"); }}>Propose Trade</button>}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showForm && (
+          <ListingForm
+            onClose={() => setShowForm(false)}
+            onAdd={g => { setMyGear(p => [g, ...p]); setShowForm(false); flash("\u{1F4E6} Listing added!"); }}
+          />
+        )}
+      </div>
+    </>
+  );
+}
+
+// ─── ONBOARDING ─────
+function Onboarding({ onDone }) {
+  const [step, setStep] = useState(0);
+  const [sports, setSports] = useState([]);
+  const [meas, setMeas] = useState({});
+  const toggle = s => setSports(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+  const setM = (k, v) => setMeas(p => ({ ...p, [k]: v }));
+
+  return (
+    <div className="overlay">
+      <div className="modal">
+        <div className="steps">{[0, 1, 2].map(i => <div key={i} className={`stp ${i === step ? "on" : i < step ? "done" : ""}`} />)}</div>
+        {step === 0 && (
+          <div className="anim-up">
+            <h2>Welcome to GearMatch {"\u{1F3AF}"}</h2>
+            <p className="sub">Match with athletes who share your body measurements — then swap, buy & sell gear that actually fits.</p>
+            <div className="fg">
+              <label className="fl">What sports are you into?</label>
+              <div className="sp-sel">{SPORTS.map(s => <button key={s} className={`sp-opt ${sports.includes(s) ? "on" : ""}`} onClick={() => toggle(s)}>{s}</button>)}</div>
+            </div>
+            <div className="br"><button className="btn-p" disabled={!sports.length} onClick={() => setStep(1)}>Continue →</button></div>
+          </div>
+        )}
+        {step === 1 && (
+          <div className="anim-up">
+            <h2>Body Measurements {"\u{1F4CF}"}</h2>
+            <p className="sub">Powers your match score. Never shown publicly — only the match % is visible.</p>
+            <div className="mi">
+              {[["Height","e.g. 5'10\""],["Weight","e.g. 168 lbs"],["Chest","inches"],["Waist","inches"],["Hips","inches"],["Inseam","inches"],["Arm Length","inches"],["Foot Length","inches"]].map(([l,ph]) => (
+                <div className="fg" key={l}><label className="fl">{l}</label><input className="fi" placeholder={ph} value={meas[l]||""} onChange={e => setM(l,e.target.value)} /></div>
+              ))}
+            </div>
+            <div className="br"><button className="btn-s" onClick={() => setStep(0)}>← Back</button><button className="btn-p" onClick={() => setStep(2)}>Continue →</button></div>
+          </div>
+        )}
+        {step === 2 && (
+          <div className="anim-up">
+            <h2>Brand / Size History {"\u{1F455}"}</h2>
+            <p className="sub">Helps calibrate fits across brands. Add as many as you like.</p>
+            {[0, 1, 2].map(i => (
+              <div className="fg" key={i} style={{ display: "flex", gap: 8 }}>
+                <input className="fi" placeholder="Brand (e.g. Castelli)" style={{ flex: 1 }} />
+                <input className="fi" placeholder="Size" style={{ width: 100 }} />
+              </div>
+            ))}
+            <div className="br"><button className="btn-s" onClick={() => setStep(1)}>← Back</button><button className="btn-p" onClick={onDone}>Start Matching {"\u{1F3AF}"}</button></div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── CHAT ─────
+function Chat({ user, onBack, onGear }) {
+  const [msgs, setMsgs] = useState(MOCK_MESSAGES[user.id] || []);
+  const [inp, setInp] = useState("");
+  const end = useRef(null);
+  useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
+  const send = () => { if (!inp.trim()) return; setMsgs(p => [...p, { from: "me", text: inp, time: "just now" }]); setInp(""); };
+  const gear = MOCK_GEAR[user.id] || [];
+
+  return (
+    <div className="chat anim-up">
+      <div className="chat-hdr">
+        <button className="chat-back" onClick={onBack}>←</button>
+        <div className="m-av" style={{ width: 34, height: 34, fontSize: 11 }}>{user.avatar}</div>
+        <div>
+          <div style={{ fontWeight: 600, fontSize: 14 }}>{user.name}</div>
+          <div style={{ fontSize: 11, color: "#6B7A94" }}>{user.match}% match · {user.location}</div>
+        </div>
+      </div>
+      {gear.length > 0 && (
+        <div className="chat-gear">
+          {gear.map(g => (
+            <div className="cg-item" key={g.id} onClick={() => onGear(g)}>
+              <span>{g.img}</span>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 11, whiteSpace: "nowrap" }}>{g.name.split(" ").slice(0, 3).join(" ")}</div>
+                <div style={{ color: "#00FFAA", fontFamily: "'JetBrains Mono',monospace", fontSize: 11 }}>${g.price}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="chat-msgs">
+        {msgs.map((m, i) => <div key={i} className={`msg ${m.from}`}>{m.text}<div className="msg-t">{m.time}</div></div>)}
+        <div ref={end} />
+      </div>
+      <div className="chat-bar">
+        <input className="chat-in" placeholder="Type a message..." value={inp} onChange={e => setInp(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} />
+        <button className="send" onClick={send}>↑</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── LISTING FORM ─────
+function ListingForm({ onClose, onAdd }) {
+  const [name, setName] = useState(""); const [brand, setBrand] = useState("");
+  const [size, setSize] = useState(""); const [sport, setSport] = useState("");
+  const [cond, setCond] = useState(3); const [price, setPrice] = useState("");
+  const [trade, setTrade] = useState(false);
+  const emo = { Cycling:"\u{1F6B4}", Running:"\u{1F45F}", Swimming:"\u{1F3CA}", Triathlon:"\u{1F3CA}", Skiing:"\u26F7\uFE0F", Climbing:"\u{1F9D7}" };
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h2>Add Gear Listing</h2>
+        <p className="sub">List something from your closet</p>
+        <div className="fg"><label className="fl">Item Name</label><input className="fi" placeholder="e.g. Castelli Aero Race Jersey" value={name} onChange={e => setName(e.target.value)} /></div>
+        <div style={{ display:"flex", gap:8 }}>
+          <div className="fg" style={{ flex:1 }}><label className="fl">Brand</label><input className="fi" placeholder="e.g. Castelli" value={brand} onChange={e => setBrand(e.target.value)} /></div>
+          <div className="fg" style={{ width:100 }}><label className="fl">Size</label><input className="fi" placeholder="e.g. M" value={size} onChange={e => setSize(e.target.value)} /></div>
+        </div>
+        <div className="fg"><label className="fl">Sport</label><div className="sp-sel">{SPORTS.map(s => <button key={s} className={`sp-opt ${sport===s?"on":""}`} onClick={() => setSport(s)}>{s}</button>)}</div></div>
+        <div className="fg"><label className="fl">Condition</label><div className="cond-sel">{CONDITIONS.map((c,i) => <button key={c} className={`cond-opt ${cond===i+1?"on":""}`} onClick={() => setCond(i+1)}>{c}</button>)}</div></div>
+        <div style={{ display:"flex", gap:8 }}>
+          <div className="fg" style={{ flex:1 }}><label className="fl">Price ($)</label><input className="fi" placeholder="0" type="number" value={price} onChange={e => setPrice(e.target.value)} /></div>
+          <div className="fg" style={{ flex:1 }}><label className="fl">Open to Trade?</label><button className={`sp-opt ${trade?"on":""}`} style={{ width:"100%", textAlign:"center" }} onClick={() => setTrade(!trade)}>{trade?"\u2713 Yes":"No"}</button></div>
+        </div>
+        <div className="br">
+          <button className="btn-s" onClick={onClose}>Cancel</button>
+          <button className="btn-p" disabled={!name||!brand} onClick={() => onAdd({ id:`my-${Date.now()}`, name, brand, size:size||"OS", sport:sport||"Other", condition:cond, price:parseInt(price)||0, trade, img:emo[sport]||"\u{1F4E6}", tags:[price?"selling":null, trade?"open to trade":null].filter(Boolean) })}>List Item</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── FEEDBACK BAR ─────
+function FB() {
+  return <div className="fb"><div className="lbl">{"\u{1F9EA}"} MVP Prototype</div><p>Interactive demo with mock data. Swipe, browse, and chat — then share your feedback.</p></div>;
+}
+
+// ─── RENDER ─────
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+  </script>
+</body>
+</html>
